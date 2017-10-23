@@ -29,7 +29,7 @@ svg {
 			<h2>In honor of the LIGO detection of gravitational waves</h2>
 			<p>By Naomi Pasachoff</p>
 			<button onclick='checkPuzzle()'>Show errors</button>
-			<button onclick="d3.selectAll('g > .inputText').text(''); d3.selectAll('g > .e1').remove(); d3.selectAll('g > .e2').remove();">Restart</button>
+			<button onclick="resetPuzzle()">Restart</button>
 			<svg id="crossword" viewBox="0 0 605 605"></svg>
 		</div>
 		<div id="cluelist" style="max-width: 390px; margin: 0 auto; display: inline-block;">
@@ -58,208 +58,162 @@ var highlightOpt = "R";							// direction of current focus
 var currentSel = "";							// square that is currently focused by id attribute 
 var acrossclues = "";							// HTML string of clues
 var downclues = "";								// HTML string of clues
-var dimension = 15;								// crossword grid size
-var emptyBlocks = dimension * dimension;		// how many empty squares
+var dimension = 0;								// crossword grid size
+var emptyBlocks;								// how many empty squares left
+var totalEmpty;									// how many empty squares at start
 var autocheck = false;							// goes true when emptyBlocks = 0
 var blocks = [];								// multidimensional array with solution characters and blacks
 var cluenums = [];								// multidimensional array with clue numbers for building svg
 var cluenum = 1;								// 
+var clues = {									// object storing the clues
+	across: {},
+	down: {}
+};
+var characters;
+
+// attach keydown event listener to body with output sent to svg
+d3.select('body')
+	.on('keydown', handleInput)
+	.on('blur', function(){});
 
 /**********************************************************/
 /******************** BUILD CLUE LIST *********************/
 /**********************************************************/
 
-var clues = {
-	across: {
-		1: "Dogmatic decree",
-		7: "Columbia University experimental particle physicist Elena and family",
-		14: "<em>Une invitation</em> _ _____",
-		15: "Resembling a lion",
-		16: "Paratriathlete Seely or actress Milano",
-		17: "Snowflake relative",
-		18: "Astrophysicist Blitz",
-		19: "The Arctic is the fifth biggest",
-		21: "Historian of education Ravitch",
-		22: "The British Library holds over 3000",
-		24: "___ <em>pro nobis</em>",
-		25: 'It provided detailed all-sky pictures of the infant universe',
-		27: "Standard ______",
-		29: "A-E bridge",
-		32: "Exclamation attributed to Archimedes",
-		34: "Eve of Jewish holiday",
-		35: "Roman household deity",
-		36: "Instituto Nazionale di Fisica Nucleare physicist Fabio",
-		37: "Attempt",
-		38: "Rub out",
-		40: "Chemistry suffix",
-		41: "Projecting front part of a ship",
-		43: "Builds",
-		44: "Stratford-on-Avon theatrical org.",
-		45: "Trainers of wild animals",
-		47: "Barely makes a living",
-		48: "Greek letter",
-		49: "Mischievous",
-		51: "<em>Interstellar</em> performance that 33 Down was invited to make",
-		54: 'Selena Gomez song “Everything __ ___ What It Seems”',
-		55: 'Unit of electrical resistance',
-		58: 'The 15<sup>th</sup> stars in their respective constellations',
-		60: 'Japanese crab',
-		62: '“Born __ _____”',
-		63: 'In a rational manner',
-		64: 'Small harpsichords',
-		65: 'Life starts and ____ __ a bed'
-	},
-	down: {
-		1: 'Goes well with naan',
-		2: 'Inactive',
-		3: 'Measurement of distance within galactic groups',
-		4: 'Eustace Tilley’s weekly mag.',
-		5: 'Ancient fabulist',
-		6: 'Second most populous city in San Joaquin Co.',
-		7: 'Astronaut Shepard',
-		8: 'Louvre Pyramid architect',
-		9: 'Scots-born member of LIGO founding troika',
-		10: 'Where a third LIGO Observatory has been approved',
-		11: 'Currency of Turkey',
-		12: 'Paul Harding novel',
-		13: 'Crescenzio ____, Archbishop of Naples',
-		17: 'Berlin-born member of LIGO founding troika',
-		20: 'Cenozoic or Mesozoic',
-		23: 'Mimics',
-		24: 'Danish astronomer Rømer',
-		25: 'Controversial pioneer of gravitational waves',
-		26: 'Subatomic particles discovered in 1936',
-		28: 'Sere',
-		29: 'Colliding _____ _____ caused the first LIGO chirp',
-		30: 'Brahmin or Dalit, e.g.',
-		31: 'Put on clothing',
-		33: 'Utah-born member of LIGO founding troika',
-		37: 'Theoretical particle physicist Kibble',
-		39: 'Astronomer Royal, Baron ____ of Ludlow',
-		42: 'Nickname for 17 down',
-		43: 'Adopt a cause',
-		46: 'Successor to LBJ',
-		48: 'Alabama state nut',
-		50: 'Children’s book <em>Mr. Fix-__-___and His Bag of Stones</em>',
-		51: 'Camp beds',
-		52: 'Nationwide cleaning service Two Maids and _ ___',
-		53: 'Observatoire du Pic du ____',
-		54: 'Particle physicist Reinartz of Karlsruhe Institute of Technology',
-		56: 'Site of Imiloa Astronomy Center',
-		57: 'Isaac Bashevis Singer’s autobiographical ____ <em>tatn besdin-shtub</em>',
-		59: '10<sup>th</sup> mo.',
-		61: 'In addition'
+d3.csv('cluelist.csv', getClues);
+
+function getClues(cluesrc) {
+	// console.log('clues: ', cluesrc);
+	for (k=0; k<cluesrc.length; k++) {
+		if (cluesrc[k].dir === 'across') {
+			clues.across[cluesrc[k].key] = cluesrc[k].clue.replace('&#44;',',');
+		}
+		else if (cluesrc[k].dir === 'down') {
+			clues.down[cluesrc[k].key] = cluesrc[k].clue.replace('&#44;',',');
+		}
+		else if (cluesrc[k].dir === 'size') {
+			dimension = parseInt(cluesrc[k].clue);
+			emptyBlocks = dimension * dimension;
+			totalEmpty = emptyBlocks;
+		}
+		else if (cluesrc[k].dir === 'letters') {
+			characters = cluesrc[k].clue;
+		}
 	}
-};
 
-for (i=0; i<Object.entries(clues.across).length; i++) {
-	acrossclues += "<p id='a" + Object.entries(clues.across)[i][0] + "' style='font-size: 13px; margin: 0.25em 0;' onclick='clueSelect(this.id, \"cluelist\")'>" + Object.entries(clues.across)[i][0] + ". " + Object.entries(clues.across)[i][1] + "</p>";
-}
-document.getElementById('cluesacross').innerHTML = acrossclues;
+	for (i=0; i<Object.entries(clues.across).length; i++) {
+		acrossclues += "<p id='a" + Object.entries(clues.across)[i][0] + "' style='font-size: 13px; margin: 0.25em 0;' onclick='clueSelect(this.id, \"cluelist\")'>" + Object.entries(clues.across)[i][0] + ". " + Object.entries(clues.across)[i][1] + "</p>";
+	}
+	document.getElementById('cluesacross').innerHTML = acrossclues;
 
-for (i=0; i<Object.entries(clues.down).length; i++) {
-	downclues += "<p id='d" + Object.entries(clues.down)[i][0] + "' style='font-size: 13px; margin: 0.25em 0;' onclick='clueSelect(this.id, \"cluelist\")'>" + Object.entries(clues.down)[i][0] + ". " + Object.entries(clues.down)[i][1] + "</p>";
+	for (i=0; i<Object.entries(clues.down).length; i++) {
+		downclues += "<p id='d" + Object.entries(clues.down)[i][0] + "' style='font-size: 13px; margin: 0.25em 0;' onclick='clueSelect(this.id, \"cluelist\")'>" + Object.entries(clues.down)[i][0] + ". " + Object.entries(clues.down)[i][1] + "</p>";
+	}
+	document.getElementById('cluesdown').innerHTML = downclues;
+
+	buildGrid();
 }
-document.getElementById('cluesdown').innerHTML = downclues;
+
 
 /**********************************************************/
 /********************** BUILD LAYOUT **********************/
 /**********************************************************/
 
-var characters = "DIKTAT  APRILESADINER  LEONINEALLYSA RAINDROPLEO OCEAN DIANE  PAPYRI ORA   WMAP CANDLE BCDEUREKA EREV LARBOSSI TRY ERASEENE PROW ERECTSRSC TAMERS EKES   PHI IMPISH  CAMEO ISNOT OHMOMICRONS UMALIATODANCE  SANELYSPINETS  ENDSON";
 
-// convert characters string into multidimensional array
-// spaces are used to indicate black squares in crossword
-for (i=0; i<dimension; i++) {
-	blocks.push([]);
-	for (j=i*dimension; j<(i*dimension)+dimension; j++) {
-		blocks[i].push(characters.slice(j,j+1));
-	}
-}
-//console.log(blocks);
-
-// fill cluenums array with numbers
-for (i=0; i<dimension; i++) {
-	cluenums.push([]);
-	for (j=0; j<dimension; j++) {
-		if (i===0) {
-			if (blocks[i][j] !== " ") {
-				cluenums[i].push(cluenum);
-				cluenum++;
-			}
-			else {
-				cluenums[i].push("");
-			}
-		}
-		else {
-			if (j===0 && blocks[i][j] !== " ") {
-				cluenums[i].push(cluenum);
-				cluenum++;
-			}
-			else if (blocks[i][j-1] === " " && blocks[i][j] !== " ") {
-				cluenums[i].push(cluenum);
-				cluenum++;
-			}
-			else if (blocks[i-1][j] === " " && blocks[i][j] !== " ") {
-				cluenums[i].push(cluenum);
-				cluenum++;
-			}
-			else {
-				cluenums[i].push("");
-			}
+function buildGrid() {
+	// convert characters string into multidimensional array
+	// spaces are used to indicate black squares in crossword
+	for (i=0; i<dimension; i++) {
+		blocks.push([]);
+		for (j=i*dimension; j<(i*dimension)+dimension; j++) {
+			blocks[i].push(characters.slice(j,j+1));
 		}
 	}
-}
-//console.log(cluenums);
+	//console.log(blocks);
 
-var crossword = d3.select("#crossword");
-
-for (i=0; i<dimension; i++) {
-	for (j=0; j<dimension; j++) {
-		var block = crossword.append('g')
-							.attr('id', 'r' + i + 'c' + j);
-		var cell = block.append('rect')
-						.attr('value',i+j)
-						.attr('class','letterbox')
-						.attr('x',j*40+1)
-						.attr('y',i*40+1)
-						.attr('width',40)
-						.attr('height',40)
-						.attr('style','stroke-width: 1; stroke: rgb(55,55,55); fill: rgb(255,255,255);');
-		if (blocks[i][j]===" ") {
-			emptyBlocks--;
-			cell.attr('style','stroke-width: 1; stroke: rgb(55,55,55); fill:rgb(0,0,0);')
-				.attr('class','blackbox');
+	// fill cluenums array with numbers
+	for (i=0; i<dimension; i++) {
+		cluenums.push([]);
+		for (j=0; j<dimension; j++) {
+			if (i===0) {
+				if (blocks[i][j] !== " ") {
+					cluenums[i].push(cluenum);
+					cluenum++;
+				}
+				else {
+					cluenums[i].push("");
+				}
+			}
+			else {
+				if (j===0 && blocks[i][j] !== " ") {
+					cluenums[i].push(cluenum);
+					cluenum++;
+				}
+				else if (blocks[i][j-1] === " " && blocks[i][j] !== " ") {
+					cluenums[i].push(cluenum);
+					cluenum++;
+				}
+				else if (blocks[i-1][j] === " " && blocks[i][j] !== " ") {
+					cluenums[i].push(cluenum);
+					cluenum++;
+				}
+				else {
+					cluenums[i].push("");
+				}
+			}
 		}
-		else {
-			if (cluenums[i][j] !== "") {
+	}
+	//console.log(cluenums);
+
+	var crossword = d3.select("#crossword");
+
+	for (i=0; i<dimension; i++) {
+		for (j=0; j<dimension; j++) {
+			var block = crossword.append('g')
+								.attr('id', 'r' + i + 'c' + j);
+			var cell = block.append('rect')
+							.attr('value',i+j)
+							.attr('class','letterbox')
+							.attr('x',j*40+1)
+							.attr('y',i*40+1)
+							.attr('width',40)
+							.attr('height',40)
+							.attr('style','stroke-width: 1; stroke: rgb(55,55,55); fill: rgb(255,255,255);');
+			if (blocks[i][j]===" ") {
+				emptyBlocks--;
+				cell.attr('style','stroke-width: 1; stroke: rgb(55,55,55); fill:rgb(0,0,0);')
+					.attr('class','blackbox');
+			}
+			else {
+				if (cluenums[i][j] !== "") {
+					block.append('text')
+						.attr('x',j*40+4)
+						.attr('y',i*40+12)
+						.attr('style','fill: black; font-size: 10px;')
+						.attr('id','clue' + cluenums[i][j])
+						.text(cluenums[i][j]);
+				}
+			}
 				block.append('text')
-					.attr('x',j*40+4)
-					.attr('y',i*40+12)
-					.attr('style','fill: black; font-size: 10px;')
-					.attr('id','clue' + cluenums[i][j])
-					.text(cluenums[i][j]);
-			}
+					.attr('class','inputText')
+					.attr('x',j*40+20)
+					.attr('y',i*40+35)
+					.attr('text-anchor','middle')
+					.text('')
+					//.text(blocks[i][j])	// debugging: fill in solutions
+					.attr('style','fill: black; font-size: 30px;');
 		}
-			block.append('text')
-				.attr('class','inputText')
-				.attr('x',j*40+20)
-				.attr('y',i*40+35)
-				.attr('text-anchor','middle')
-				.text('')
-				//.text(blocks[i][j])	// debugging: fill in solutions
-				.attr('style','fill: black; font-size: 30px;');
 	}
+
+	// add listeners
+	d3.selectAll('rect').on('click', highlightSelection);
+	d3.selectAll('.inputText').on('click', highlightSelection);
 }
 
 /**********************************************************/
 /****************** TEXT INPUT HANDLING *******************/
 /**********************************************************/
 
-// attach keydown event listener to body with output sent to svg
-d3.select('body')
-	.on('keydown', handleInput)
-	.on('blur', function(){});
 
 function handleInput() {
 	var row = Math.floor(currentBlock/dimension);
@@ -309,8 +263,10 @@ function handleInput() {
 				break;
 			case 46: // delete
 			case 8: // backspace
-				emptyBlocks++;
-				d3.select('.target ~ .inputText').text('');
+				if (d3.select('.target ~ .inputText').text() !== '') { 
+					d3.select('.target ~ .inputText').text('');
+					emptyBlocks++;
+				}
 				getPrev();
 				break;
 		}
@@ -404,8 +360,6 @@ function getNext() {
 /**********************************************************/
 
 
-d3.selectAll('rect').on('click', highlightSelection);
-d3.selectAll('.inputText').on('click', highlightSelection);
 
 function highlightSelection(d, i) {
 	var row = Math.floor(i/dimension);
@@ -599,7 +553,6 @@ function checkPuzzle() {
 		inputLetters.push([]);
 		for (j=0; j<dimension; j++) {
 			inputLetters[i].push(d3.selectAll('g > text.inputText')._groups[0][i*15+j].textContent);
-			if (inputLetters[i][j]==='') { isComplete = false; }
 		}
 	}
 
@@ -615,12 +568,13 @@ function checkPuzzle() {
 		}
 	}
 
-	if ((errors.length === 0) && (isComplete)) {
-		displaySuccess();
-	}
-
 	if (autocheck) {
-		displayCompleteButWrong();
+		if (errors.length === 0) {
+			displaySuccess();
+		}
+		else {
+			displayCompleteButWrong();
+		}
 	}
 	else {
 		showErrors(errors);
@@ -663,7 +617,6 @@ var shadow = defs.append('filter')
 						.attr('dx',2)
 						.attr('dy',2)
 						.attr('stdDeviation',1);
-var displaySuccess = false;
 
 function drawSuccessBox() {
 	var successbox = d3.select('#crossword').append('g')
@@ -693,64 +646,64 @@ function drawSuccessBox() {
 				.attr('ry',10)
 				.attr('rx',10)
 				.attr('style','stroke-width: 1; stroke: rgb(0,0,0); fill: rgb(255,255,255); filter:url(#boxShadow);')
-				.on('click', function() { d3.select('#successBox').remove(); autocheck=false; displaySuccess=false; });
+				.on('click', function() { d3.select('#successBox').remove(); autocheck=false; });
 
 	return successbox;
 }
 
 function displaySuccess() {
-	if (!displaySuccess) {
-		var successbox = drawSuccessBox();
+	var successbox = drawSuccessBox();
 
-		// Congratulations text
-		successbox.append('text')
-					.attr('x',400)
-					.attr('y',305)
-					.attr('text-anchor', 'middle')
-					.attr('style','fill: black; font-size: 18px;')
-					.text('Congratulations!');
+	// Congratulations text
+	successbox.append('text')
+				.attr('x',300)
+				.attr('y',285)
+				.attr('text-anchor', 'middle')
+				.attr('style','fill: black; font-size: 24px;')
+				.text('Congratulations!');
 
-		// close box button text
-		successbox.append('text')
-					.attr('x',300)
-					.attr('y',340)
-					.attr('text-anchor', 'middle')
-					.attr('style','fill: black; font-size: 18px;')
-					.text('Great! Bye!')
-					.on('click', function() { d3.select('#successBox').remove(); autocheck=false; displaySuccess=false; });
-		displaySuccess = true;
-	}
+	// close box button text
+	successbox.append('text')
+				.attr('x',300)
+				.attr('y',340)
+				.attr('text-anchor', 'middle')
+				.attr('style','fill: black; font-size: 18px;')
+				.text('Great! Bye!')
+				.on('click', function() { d3.select('#successBox').remove(); autocheck=false; });
 }
 
 function displayCompleteButWrong() {
-	if (!displaySuccess) {
-		var successbox = drawSuccessBox();
+	var successbox = drawSuccessBox();
 
-		// Close but not quite text
-		var successlabel = successbox.append('text')
-									.attr('text-anchor', 'middle')
-									.attr('style','fill: black; font-size: 18px;');
-			successlabel.append('tspan')
-						.attr('x',300)
-						.attr('y',275)
-						.text('You completed the puzzle but');
-			successlabel.append('tspan')
-						.attr('x',300)
-						.attr('y',300)
-						.text('at least one letter is wrong!');
-
-		// close box button text
-		successbox.append('text')
+	// Close but not quite text
+	var successlabel = successbox.append('text')
+								.attr('text-anchor', 'middle')
+								.attr('style','fill: black; font-size: 18px;');
+		successlabel.append('tspan')
 					.attr('x',300)
-					.attr('y',340)
-					.attr('text-anchor', 'middle')
-					.attr('style','fill: black; font-size: 18px;')
-					.text('Go for it!')
-					.on('click', function() { d3.select('#successBox').remove(); autocheck=false; displaySuccess=false; });
-		displaySuccess = true;
-	}
+					.attr('y',275)
+					.text('You completed the puzzle but');
+		successlabel.append('tspan')
+					.attr('x',300)
+					.attr('y',300)
+					.text('at least one letter is wrong!');
+
+	// close box button text
+	successbox.append('text')
+				.attr('x',300)
+				.attr('y',340)
+				.attr('text-anchor', 'middle')
+				.attr('style','fill: black; font-size: 18px;')
+				.text('Go for it!')
+				.on('click', function() { d3.select('#successBox').remove(); autocheck=false; });
 }
 
+function resetPuzzle() {
+	d3.selectAll('g > .inputText').text('');
+	d3.selectAll('g > .e1').remove();
+	d3.selectAll('g > .e2').remove();
+	emptyBlocks=totalEmpty;
+}
 </script>
 </body>
 
