@@ -49,10 +49,21 @@ svg {
 <script src="https://d3js.org/d3.v4.min.js"></script>
 
 <script>
-var currentBlock = 0;
-var selectedClue = "";
-var highlightOpt = "R";
-var currentSel = "";
+
+// GLOBALS
+
+var currentBlock = 0;							// current location 0->dimension*dimension
+var selectedClue = "";							// clue in cluelist that is selected
+var highlightOpt = "R";							// direction of current focus
+var currentSel = "";							// square that is currently focused by id attribute 
+var acrossclues = "";							// HTML string of clues
+var downclues = "";								// HTML string of clues
+var dimension = 15;								// crossword grid size
+var emptyBlocks = dimension * dimension;		// how many empty squares
+var autocheck = false;							// goes true when emptyBlocks = 0
+var blocks = [];								// multidimensional array with solution characters and blacks
+var cluenums = [];								// multidimensional array with clue numbers for building svg
+var cluenum = 1;								// 
 
 /**********************************************************/
 /******************** BUILD CLUE LIST *********************/
@@ -141,8 +152,6 @@ var clues = {
 	}
 };
 
-var acrossclues = "";
-var downclues = "";
 for (i=0; i<Object.entries(clues.across).length; i++) {
 	acrossclues += "<p id='a" + Object.entries(clues.across)[i][0] + "' style='font-size: 13px; margin: 0.25em 0;' onclick='clueSelect(this.id, \"cluelist\")'>" + Object.entries(clues.across)[i][0] + ". " + Object.entries(clues.across)[i][1] + "</p>";
 }
@@ -157,12 +166,10 @@ document.getElementById('cluesdown').innerHTML = downclues;
 /********************** BUILD LAYOUT **********************/
 /**********************************************************/
 
-var dimension = 15;
-var emptyBlocks = dimension * dimension;
-var autocheck = false;
 var characters = "DIKTAT  APRILESADINER  LEONINEALLYSA RAINDROPLEO OCEAN DIANE  PAPYRI ORA   WMAP CANDLE BCDEUREKA EREV LARBOSSI TRY ERASEENE PROW ERECTSRSC TAMERS EKES   PHI IMPISH  CAMEO ISNOT OHMOMICRONS UMALIATODANCE  SANELYSPINETS  ENDSON";
 
-var blocks = [];
+// convert characters string into multidimensional array
+// spaces are used to indicate black squares in crossword
 for (i=0; i<dimension; i++) {
 	blocks.push([]);
 	for (j=i*dimension; j<(i*dimension)+dimension; j++) {
@@ -171,8 +178,7 @@ for (i=0; i<dimension; i++) {
 }
 //console.log(blocks);
 
-var cluenums = [];
-var cluenum = 1;
+// fill cluenums array with numbers
 for (i=0; i<dimension; i++) {
 	cluenums.push([]);
 	for (j=0; j<dimension; j++) {
@@ -241,7 +247,7 @@ for (i=0; i<dimension; i++) {
 				.attr('y',i*40+35)
 				.attr('text-anchor','middle')
 				.text('')
-				//.text(blocks[i][j])
+				//.text(blocks[i][j])	// debugging: fill in solutions
 				.attr('style','fill: black; font-size: 30px;');
 	}
 }
@@ -250,6 +256,7 @@ for (i=0; i<dimension; i++) {
 /****************** TEXT INPUT HANDLING *******************/
 /**********************************************************/
 
+// attach keydown event listener to body with output sent to svg
 d3.select('body')
 	.on('keydown', handleInput)
 	.on('blur', function(){});
