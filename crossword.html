@@ -1,12 +1,17 @@
 <html>
 <head>
 	<meta charset="UTF-8">
-<style>
+
+</head>
+
+<body>
+	<style>
 #cw_container {
-  width: 605px;
+  width: 500px;
   height: 705px;
   margin: 20px 0;
   display: inline-block;
+  vertical-align: top;
 }
 
 * {
@@ -21,26 +26,21 @@ svg {
   font-family: sans-serif;
 }
 </style>
-</head>
-
-<body>
 	<div id="wrapper" style="max-width: 1000px; margin: 20px auto;">
 		<div id="cw_container">
-			<h2>In honor of the LIGO detection of gravitational waves</h2>
-			<p>By Naomi Pasachoff</p>
 			<button onclick='checkPuzzle()'>Show errors</button>
 			<button onclick="resetPuzzle()">Restart</button>
 			<svg id="crossword" viewBox="0 0 605 605"></svg>
 		</div>
-		<div id="cluelist" style="max-width: 390px; margin: 0 auto; display: inline-block;">
-			<div style="width: 46%; display: inline-block;">
-				<h3>ACROSS</h3>
-				<div id="cluesacross" style="height: 600px; overflow: scroll;">
+		<div id="cluelist" style="max-width: 300px; margin: 0 auto; display: inline-block;">
+			<div style="width: 46%; display: inline-block; vertical-align: top;">
+				<h4 style="margin-bottom: 0.25em;">ACROSS</h4>
+				<div id="cluesacross" style="height: 500px; overflow: scroll;">
 				</div>
 			</div>
-			<div style="width: 46%; display: inline-block;">
-				<h3>DOWN</h3>
-				<div id="cluesdown" style="height: 600px; overflow: scroll;">
+			<div style="width: 46%; display: inline-block; vertical-align: top;">
+				<h4 style="margin-bottom: 0.25em;">DOWN</h4>
+				<div id="cluesdown" style="height: 500px; overflow: scroll;">
 				</div>
 			</div>
 		</div>
@@ -102,12 +102,12 @@ function getClues(cluesrc) {
 	}
 
 	for (i=0; i<Object.entries(clues.across).length; i++) {
-		acrossclues += "<p id='a" + Object.entries(clues.across)[i][0] + "' style='font-size: 13px; margin: 0.25em 0;' onclick='clueSelect(this.id, \"cluelist\")'>" + Object.entries(clues.across)[i][0] + ". " + Object.entries(clues.across)[i][1] + "</p>";
+		acrossclues += "<p id='a" + Object.entries(clues.across)[i][0] + "' style='font-size: 13px; margin: 0.25em 0; line-height: 1.25em;' onclick='clueSelect(this.id, \"cluelist\")'>" + Object.entries(clues.across)[i][0] + ". " + Object.entries(clues.across)[i][1] + "</p>";
 	}
 	document.getElementById('cluesacross').innerHTML = acrossclues;
 
 	for (i=0; i<Object.entries(clues.down).length; i++) {
-		downclues += "<p id='d" + Object.entries(clues.down)[i][0] + "' style='font-size: 13px; margin: 0.25em 0;' onclick='clueSelect(this.id, \"cluelist\")'>" + Object.entries(clues.down)[i][0] + ". " + Object.entries(clues.down)[i][1] + "</p>";
+		downclues += "<p id='d" + Object.entries(clues.down)[i][0] + "' style='font-size: 13px; margin: 0.25em 0; line-height: 1.25em;' onclick='clueSelect(this.id, \"cluelist\")'>" + Object.entries(clues.down)[i][0] + ". " + Object.entries(clues.down)[i][1] + "</p>";
 	}
 	document.getElementById('cluesdown').innerHTML = downclues;
 
@@ -233,36 +233,46 @@ function handleInput() {
 	else {
 		switch (code) {
 			case 37: //left
+				d3.event.preventDefault();
 				if (highlightOpt==='C') {
 					highlightSelection(null, currentBlock);
 				}
 				else { getPrev(); }
 				break;
 			case 38: //up
+				d3.event.preventDefault();
 				if (highlightOpt==='R') {
 					highlightSelection(null, currentBlock);
 				}
 				else { getPrev(); }
 				break;
 			case 39: // right
+				d3.event.preventDefault();
 				if (highlightOpt==='C') {
 					highlightSelection(null, currentBlock);
 				}
 				else { getNext(); }
 				break;
 			case 40: // down
+				d3.event.preventDefault();
 				if (highlightOpt==='R') {
 					highlightSelection(null, currentBlock);
 				}
-				else { getNext(); }
+				else { getNext('arrow'); }
 				break;
 			case 9: // tab
+				d3.event.preventDefault();
+				if (d3.event.shiftKey) {
+					prevClue();
+					break;
+				}
 			case 13: // enter
 				d3.event.preventDefault();
 				nextClue();
 				break;
 			case 46: // delete
 			case 8: // backspace
+				d3.event.preventDefault();
 				if (d3.select('.target ~ .inputText').text() !== '') { 
 					d3.select('.target ~ .inputText').text('');
 					emptyBlocks++;
@@ -317,8 +327,8 @@ function getPrev() {
 	}
 }
 
-function getNext() {
-	if (currentBlock!==(dimension*dimension)-1) {
+function getNext(src) {
+	if (currentBlock!==(dimension*dimension)-1) {		// keeps currentBlock within array
 		// move right
 		if (highlightOpt==='R') {
 			currentBlock++;
@@ -338,18 +348,26 @@ function getNext() {
 			var row = Math.floor(currentBlock/dimension);
 			var col = currentBlock%dimension;
 			if (currentBlock < dimension*dimension) {
-				if (blocks[row][col] === ' ') {
+				// if the next block is black and the key source was a letter
+				if (blocks[row][col] === ' ' && src !== 'arrow') {
 					nextClue();
 				}
-			/*	while (blocks[row][col] === ' ') {
-					currentBlock += dimension;
-					row++;
-				}*/
+				// if the next block is black and the key source was the down key
+				else if (blocks[row][col] === ' ' && src === 'arrow') {
+					getNext(src);
+				}
+				// if the next block is white
 				else { highlightSelection(null, currentBlock); }
 			}
-			if (row >= dimension) {
+			if (row >= dimension && src !== 'arrow') {
+				nextClue();
+			}
+			else if (row>=dimension && src === 'arrow') {
 				currentBlock = col+1;
-				highlightSelection(null, currentBlock);
+				if (blocks[0][currentBlock] === ' ') {
+					getNext(src);
+				}
+				else { highlightSelection(null, currentBlock); }
 			}
 		}
 	}
@@ -494,17 +512,20 @@ function nextClue() {
 		var newclue = dir;
 		var keys;
 
+		// create a list of the clue keys for either across or down
 		if (dir === 'a') {
 			keys = Object.keys(clues.across);
 		}
 		else {
 			keys = Object.keys(clues.down);
 		}
+		// go through list of keys
 		for (k=0; k<keys.length; k++) {
 			if (k===keys.length-1) {
-				newclue += '1';
+				dir === 'a' ? newclue = 'd1' : newclue = 'a1';
 				break;
 			}
+			// if find the current clue key (num), then set the new clue to the next key value
 			if (keys[k] === num) {
 				newclue += keys[k+1];
 				break;
@@ -515,12 +536,39 @@ function nextClue() {
 	else { clueSelect('a1', 'cluelist'); }
 }
 
+function prevClue() {
+	if (selectedClue !== '') {
+		var dir = selectedClue.substr(0,1);
+		var num = selectedClue.substr(1);
+		var newclue = dir;
+		var keys;
+
+		if (dir === 'a') {
+			keys = Object.keys(clues.across);
+		}
+		else {
+			keys = Object.keys(clues.down);
+		}
+		if (keys[0] !== num) {
+			for (k=keys.length-1; k>0; k--) {
+				if (keys[k] === num) {
+					newclue += keys[k-1];
+					break;
+				}
+			}
+			clueSelect(newclue, 'cluelist');
+		}
+	}
+	else { clueSelect('a1', 'cluelist'); }
+}
+
 function clueSelect(tar, source) {
 	if (selectedClue !== tar) {
 		if (selectedClue !== "") { clearSelected(); }
 		selectedClue = tar;
 		document.getElementById(selectedClue).style.backgroundColor='lightblue';
-		document.getElementById(selectedClue).scrollIntoView();
+		var scrolltarget = document.getElementById(selectedClue);
+		scrolltarget.parentNode.scrollTop = scrolltarget.offsetTop - scrolltarget.parentNode.offsetTop;
 		if (selectedClue.substr(0,1) === 'd') { highlightOpt="C"; } else { highlightOpt = "R"; }
 		var index;
 		for (i=0; i<dimension; i++) {
