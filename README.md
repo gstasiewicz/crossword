@@ -4,6 +4,8 @@ An interactive d3-based crossword puzzle.
 
 crossword.html creates a fully interactive square crossword puzzle from a csv file.
 
+demo - https://gstasiewicz.github.io/crossword/crossword.html
+
 Functionality includes text input, navigation with arrow keys, tab and shift-tab, and delete/backspace
 
 CSV file should be formatted as follows:
