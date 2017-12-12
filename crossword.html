@@ -26,7 +26,6 @@ svg {
   font-family: sans-serif;
 }
 </style>
-<p>This puzzle explicitly recognizes the original “troika” that founded the Laser Interferometer Gravitational-Wave Observatory (LIGO). Many people <a href="https://doi.org/10.1063/PT.5.2049">thought</a> they might win the 2016 Nobel Prize in Physics, but the deadline for nominations had passed a couple of weeks before the first detection of gravitational waves was publicly announced. One of the troika <a href="https://doi.org/10.1063/PT.3.3796">died in March 2017</a>, so he was ineligible to share this year’s Nobel Prize. On 3 October 2017, the surviving troika members, along with Barry Barish (who does not figure in the puzzle), were <a href="https://doi.org/10.1063/PT.6.1.20171003a">honored by the Royal Swedish Academy of Sciences</a> for their “decisive contributions to the LIGO detector and the observation of gravitational waves.”</p>
 	<div id="wrapper" style="max-width: 1000px; margin: 20px auto;">
 		<div id="cw_container">
 			<button onclick='checkPuzzle()'>Show errors</button>
@@ -327,6 +326,7 @@ function getPrev() {
 		}
 	}
 }
+
 
 function getNext(source) {
 	if (currentBlock!==(dimension*dimension)-1) {		// keeps currentBlock within array
