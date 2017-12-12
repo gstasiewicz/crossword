@@ -327,7 +327,8 @@ function getPrev() {
 	}
 }
 
-function getNext(src) {
+
+function getNext(source) {
 	if (currentBlock!==(dimension*dimension)-1) {		// keeps currentBlock within array
 		// move right
 		if (highlightOpt==='R') {
@@ -349,23 +350,23 @@ function getNext(src) {
 			var col = currentBlock%dimension;
 			if (currentBlock < dimension*dimension) {
 				// if the next block is black and the key source was a letter
-				if (blocks[row][col] === ' ' && src !== 'arrow') {
+				if (blocks[row][col] === ' ' && source !== 'arrow') {
 					nextClue();
 				}
 				// if the next block is black and the key source was the down key
-				else if (blocks[row][col] === ' ' && src === 'arrow') {
-					getNext(src);
+				else if (blocks[row][col] === ' ' && source === 'arrow') {
+					getNext(source);
 				}
 				// if the next block is white
 				else { highlightSelection(null, currentBlock); }
 			}
-			if (row >= dimension && src !== 'arrow') {
+			if (row >= dimension && source !== 'arrow') {
 				nextClue();
 			}
-			else if (row>=dimension && src === 'arrow') {
+			else if (row>=dimension && source === 'arrow') {
 				currentBlock = col+1;
 				if (blocks[0][currentBlock] === ' ') {
-					getNext(src);
+					getNext(source);
 				}
 				else { highlightSelection(null, currentBlock); }
 			}
@@ -574,7 +575,7 @@ function clueSelect(tar, source) {
 		for (i=0; i<dimension; i++) {
 			index = cluenums[i].indexOf(parseInt(selectedClue.substr(1)));
 			if(index !== -1) {
-				index = i*15+index;
+				index = i*dimension+index;
 				break;
 			}
 		}
