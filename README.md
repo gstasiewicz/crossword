@@ -8,6 +8,8 @@ demo - https://gstasiewicz.github.io/crossword/crossword.html
 
 Functionality includes text input, navigation with arrow keys, tab and shift-tab, and delete/backspace
 
+Not fully functional in mobile: keyboard input isn't enabled; layout of clues isn't optimized; crossword layout doesn't resize.
+
 CSV file should be formatted as follows:
   - first line: "dir,key,clue"
   - subsequent lines indicate one of three things:
